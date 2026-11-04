@@ -1,5 +1,7 @@
 # Mi negocio · facturas y conciliación
 
+**[Abrir la herramienta publicada](https://toursfrommalaga-tech.github.io/mi-negocio-facturas/)**
+
 Piloto personal para GitHub Pages, con el motor de gestión y una edición de servidor privado por separado. No incluye facturas, clientes, contraseñas, claves, identificadores de hojas privadas ni datos del negocio que encargó el desarrollo.
 
 ## Edición GitHub Pages
@@ -40,7 +42,7 @@ Este servidor no se ejecuta en GitHub Pages, no está publicado y no se conecta 
 
 ## Pruebas
 
-`tests/pages.test.cjs` prueba la aplicación en un navegador sin perfil personal, con datos ficticios: demostración, PDF, pagos, cifrado, persistencia, contraseña incorrecta, concurrencia entre pestañas, adjuntos, exportación/restauración, alteración de copias, funciones pendientes y diseño móvil. Necesita Playwright y un navegador Chromium. La aplicación publicada no necesita paquetes npm.
+`tests/pages.test.cjs` prueba la aplicación en un navegador sin perfil personal, con datos ficticios: demostración, PDF, pagos, cifrado, persistencia, contraseña incorrecta, concurrencia entre pestañas, adjuntos, exportación/restauración, alteración de copias, funciones pendientes y diseño móvil. Necesita Playwright y un navegador Chromium. Para verificar la publicación, establece `PILOTO_TEST_URL` con la URL HTTPS; sin esa variable levanta un servidor estático local. Las 16 comprobaciones han pasado en ambos entornos. La aplicación publicada no necesita paquetes npm.
 
 El motor compartido y la edición local tienen pruebas independientes en la entrega original. No se debe presentar una prueba simulada o de navegador con tamaño móvil como una ejecución en Google o en un Android físico.
 

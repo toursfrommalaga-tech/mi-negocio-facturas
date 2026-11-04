@@ -8,6 +8,8 @@ Piloto personal para GitHub Pages, con el motor de gestión y una edición de se
 
 La carpeta `site/` es una aplicación estática completa. Funciona en HTTPS sin API: clientes, borradores con varias líneas, descuentos e IVA, PDF de borrador, documentos, registro manual de facturas, CSV, propuestas de conciliación, pagos completos/parciales/agrupados, pendientes, panel y consultas guiadas.
 
+En **Emitidas** puedes fotografiar o subir un albarán JPEG, PNG o WebP de hasta 4 MB y asociarlo al borrador. Debes revisar e introducir los conceptos: no hay lectura por IA. La fecha automática utiliza el día actual de Madrid al guardar; el contador continúa entre días dentro de cada serie y año. El historial permite descargar tanto el PDF del borrador como su documento de apoyo. La cámara de un Android físico todavía no se ha verificado.
+
 En la primera visita puedes **Probar con datos ficticios** o **Crear espacio cifrado**. El espacio personal se guarda en IndexedDB, cifrado mediante AES-GCM de 256 bits con una clave no exportable derivada por PBKDF2-SHA256 (310.000 iteraciones, sal de 16 bytes y un IV aleatorio nuevo de 12 bytes por escritura). La contraseña no se envía a un servidor. Se utiliza Web Locks para serializar operaciones entre pestañas del mismo navegador y origen.
 
 La política de contenido impide conexiones de datos desde la aplicación (`connect-src 'none'`) y el envío de formularios. No hay analítica, CDN, fuentes remotas, IA externa ni API de facturas. GitHub sirve los archivos estáticos y puede registrar los accesos HTTP conforme a su servicio; eso no significa que los registros contables se suban a GitHub.
@@ -42,7 +44,7 @@ Este servidor no se ejecuta en GitHub Pages, no está publicado y no se conecta 
 
 ## Pruebas
 
-`tests/pages.test.cjs` prueba la aplicación en un navegador sin perfil personal, con datos ficticios: demostración, PDF, pagos, cifrado, persistencia, contraseña incorrecta, concurrencia entre pestañas, adjuntos, exportación/restauración, alteración de copias, funciones pendientes y diseño móvil. Necesita Playwright y un navegador Chromium. Para verificar la publicación, establece `PILOTO_TEST_URL` con la URL HTTPS; sin esa variable levanta un servidor estático local. Las 16 comprobaciones han pasado en ambos entornos. La aplicación publicada no necesita paquetes npm.
+`tests/pages.test.cjs` prueba la aplicación en un navegador sin perfil personal, con datos ficticios: demostración, PDF, pagos, cifrado, persistencia, contraseña incorrecta, concurrencia entre pestañas, adjuntos, exportación/restauración, alteración de copias, funciones pendientes y diseño móvil. Necesita Playwright y un navegador Chromium. Para verificar la publicación, establece `PILOTO_TEST_URL` con la URL HTTPS; sin esa variable levanta un servidor estático local. Las 16 comprobaciones de la publicación inicial pasaron en ambos entornos. La actualización añade una prueba de foto y fecha automática; la batería actual contiene 17 comprobaciones. La aplicación publicada no necesita paquetes npm.
 
 El motor compartido y la edición local tienen pruebas independientes en la entrega original. No se debe presentar una prueba simulada o de navegador con tamaño móvil como una ejecución en Google o en un Android físico.
 

@@ -20,7 +20,7 @@ function filtered(items,id){const q=$(id).value.toLocaleLowerCase();return items
 function invoiceRows(type,id){return filtered(STATE.invoices.filter(i=>i.type===type),id).slice().reverse().map(i=>[esc(i.number||'Sin número')+'<span class="muted">'+esc(i.date)+(i.dateEstimated?' · fecha por verificar':'')+'</span>',esc(i.name),euro(i.total),i.status==='confirmed'?euro(i.due):'Por verificar',badge(i.status==='confirmed'?'Confirmada':'Revisar',i.status==='confirmed'?'':'warn'),i.sourceUrl?'<a href="'+esc(i.sourceUrl)+'" target="_blank" rel="noopener noreferrer">Original</a>':i.documentId?button('readDocument',i.documentId,'Documento'):'—']);}
 function draw(){
  const u=STATE.user,admin=u.role==='admin',finance=u.role!=='employee',writer=u.role!=='adviser';$('company').textContent=STATE.company;$('identity').textContent=BrowserBackend.mode()==='demo'?'Demostración · datos ficticios · sin guardar':'Espacio personal · cifrado en este navegador';$('env').textContent=BrowserBackend.mode()==='demo'?'Demostración':'Personal · cifrado';
- document.querySelectorAll('.admin').forEach(e=>e.hidden=!admin);document.querySelectorAll('.finance').forEach(e=>e.hidden=!finance);document.querySelectorAll('.writer').forEach(e=>e.hidden=!writer);$('localUsers').hidden=true;$('backupVault').hidden=BrowserBackend.mode()!=='personal';$('logout').hidden=!!gas;
+ document.querySelectorAll('.admin').forEach(e=>e.hidden=!admin);document.querySelectorAll('.finance').forEach(e=>e.hidden=!finance);document.querySelectorAll('.writer').forEach(e=>e.hidden=!writer);$('localUsers').hidden=true;$('backupVault').hidden=BrowserBackend.mode()!=='personal';$('preparedListControls').hidden=!gas||!admin;$('logout').hidden=!!gas;
  document.querySelector('nav button[data-tab="bank"]').hidden=!finance;
  const s=STATE.summary;$('metrics').innerHTML=s?[['Ventas registradas',euro(s.sales),'IVA incluido · '+s.salesCount+' facturas'],['Gastos confirmados',euro(s.expenses),s.receivedCount+' facturas recibidas'],['Pendiente de cobrar',euro(s.dueSales),'Según pagos registrados'],['Pendiente de pagar',euro(s.dueExpenses),'Según pagos registrados'],['Sin conciliar',s.unmatched,'Movimientos con saldo libre'],['Cargos por justificar',s.missingInvoices,'Revisar si falta factura'],['Documentos por revisar',s.review,'Excluidos de gastos confirmados'],['Incidencias abiertas',s.issues,'Observaciones del equipo']].map(k=>'<div class="card"><small>'+esc(k[0])+'</small><strong class="metric">'+esc(k[1])+'</strong><small>'+esc(k[2])+'</small></div>').join(''):'<div class="card"><strong class="metric">'+STATE.drafts.length+'</strong>Tus borradores guardados</div>';
  for(const [type,id] of [['sales','dueSales'],['received','dueExpenses']])$(id).innerHTML=table(['Cliente / proveedor','Factura','Pendiente'],STATE.invoices.filter(i=>i.type===type&&i.status==='confirmed'&&i.due>0).map(i=>[esc(i.name),esc(i.number),euro(i.due)]));
@@ -36,7 +36,7 @@ function draw(){
  document.querySelectorAll('.allocationInvoice').forEach(el=>{const old=el.value;el.innerHTML='<option value="">Selecciona factura</option>'+STATE.invoices.filter(i=>i.status==='confirmed').map(i=>'<option value="'+esc(i.id)+'">'+esc(i.name+' · '+i.number+' · pendiente '+euro(i.due))+'</option>').join('');el.value=old;});
  setOptions('oldPayment',STATE.payments.filter(p=>!p.bankId&&!p.voided).map(p=>{const i=STATE.invoices.find(i=>i.id===p.invoiceId);return[p.id,(i?i.number:p.invoiceId)+' · '+euro(p.amount)+' · '+p.date]}),'Crear pago nuevo');
  $('paymentTable').innerHTML=table(['Fecha','Factura','Importe','Método','Estado'],STATE.payments.slice().reverse().map(p=>{const i=STATE.invoices.find(i=>i.id===p.invoiceId);return[esc(p.date),esc(i?i.number:p.invoiceId),euro(p.amount),esc(p.method),p.voided?badge('Revertido','red'):(p.bankId?badge('Conciliado'):badge('Manual','warn'))+(admin&&!p.voided?' '+button('voidPayment',p.id,'Revertir','quiet'):'')]}));
- $('companyName').value=STATE.company;$('userTable').innerHTML=table(['Cuenta','Perfil','Acceso'],STATE.users.map(u=>[esc(u.email),esc(u.role),esc(u.active?'Activo':'Desactivado')]));$('auditTable').innerHTML=table(['Fecha','Usuario','Operación','Revisión'],STATE.audit.slice().reverse().map(a=>[esc(a.at),esc(a.actor),esc(a.action),esc(a.revision)]));
+ $('companyName').value=STATE.company;for(const [k,id]of Object.entries({nif:'issuerNif',address:'issuerAddress',postcode:'issuerPostcode',city:'issuerCity'}))$(id).value=STATE.issuer?.[k]||'';$('userTable').innerHTML=table(['Cuenta','Perfil','Acceso'],STATE.users.map(u=>[esc(u.email),esc(u.role),esc(u.active?'Activo':'Desactivado')]));$('auditTable').innerHTML=table(['Fecha','Usuario','Operación','Revisión'],STATE.audit.slice().reverse().map(a=>[esc(a.at),esc(a.actor),esc(a.action),esc(a.revision)]));
 }
 function addLine(){const d=document.createElement('div');d.className='line';d.innerHTML='<div><label>Concepto<input class="description" required maxlength="800" aria-label="Concepto de línea"></label></div><div><label>Cantidad<input class="quantity" type="number" value="1" min=".0001" step=".0001" required aria-label="Cantidad de línea"></label></div><div><label>Precio €<input class="price" type="number" min="0" step=".01" required aria-label="Precio de línea"></label></div><div><label>Dto. %<input class="discount" type="number" value="0" min="0" max="100" step=".01" aria-label="Descuento de línea"></label></div><div><label>IVA %<select class="vat" aria-label="IVA de línea"><option>21</option><option>10</option><option>4</option><option>0</option></select></label></div><button class="quiet removeLine" type="button" aria-label="Quitar línea">×</button>';$('draftLines').appendChild(d);}
 function draftLines(){return [...document.querySelectorAll('#draftLines .line')].map(el=>Object.fromEntries(['description','quantity','price','discount','vat'].map(k=>[k,el.querySelector('.'+k).value])));}
@@ -59,7 +59,8 @@ onform('uploadForm',async f=>{const p=await filePayload($('documentFile').files[
 onform('bankForm',async f=>{const file=$('bankFile').files[0];if(!file)throw Error('Selecciona un extracto');if(file.size>500000&&file.name.endsWith('.csv'))throw Error('CSV superior a 500 KB');if(/\.xlsx$/i.test(file.name)){if(gas)throw Error('Exporta este Excel como CSV; la importación XLSX está disponible en la versión local');return operation('importExcel',{...await filePayload(file),account:$('bankAccount').value},showImport);}const data=await file.arrayBuffer();let csv;try{csv=new TextDecoder('utf-8',{fatal:true}).decode(data);}catch{csv=new TextDecoder('windows-1252').decode(data);}return operation('importBank',{csv,account:$('bankAccount').value,name:file.name},showImport);});
 function showImport(r){$('importReport').textContent='Importados: '+r.imported+' · Duplicados: '+r.duplicated+' · Posibles duplicados: '+r.possibleDuplicates+(r.review?.length?' · Revisar: '+r.review.map(x=>'fila '+x.row+': '+x.reason).join('; '):'');}
 onform('allocateForm',f=>{const allocations=[...document.querySelectorAll('#allocationLines .allocation')].map(el=>({invoiceId:el.querySelector('select').value,amount:el.querySelector('input').value}));if($('oldPayment').value){if(allocations.length!==1)throw Error('Elige una sola línea para asociar un pago previo');allocations[0].paymentId=$('oldPayment').value;}return operation('allocate',{...values(f),allocations});});
-onform('companyForm',f=>operation('configure',values(f)));
+onform('companyForm',f=>{const p=values(f);return operation('configure',{company:p.company,issuer:{nif:p.nif,address:p.address,postcode:p.postcode,city:p.city}});});
+$('issuerImport').onchange=async()=>{try{const file=$('issuerImport').files[0];if(!file)return;if(file.size>20000)throw Error('Archivo de empresa demasiado grande');const raw=JSON.parse(await file.text()),p=raw.issuer;if(!p||typeof p.name!=='string')throw Error('Archivo de empresa no reconocido');$('companyName').value=p.name;for(const [k,id]of Object.entries({nif:'issuerNif',address:'issuerAddress',postcode:'issuerPostcode',city:'issuerCity'}))$(id).value=typeof p[k]==='string'?p[k]:'';toast('Datos importados para revisar. Pulsa Guardar datos de empresa.');}catch(e){toast(e.message,true);}};
 onform('userForm',f=>{const p=values(f);p.active=p.active==='true';return operation('setUser',p,()=>f.reset());});
 onform('issueForm',f=>operation('addIssue',values(f),()=>f.reset()));
 onform('askForm',async f=>{const r=await backend('ask',values(f));$('answer').innerHTML='<div class="answer">'+badge(r.certainty==='estimate'?'Interpretación por revisar':'Datos registrados',r.certainty==='estimate'?'warn':'')+'<h3 style="margin-top:14px">'+esc(r.answer)+'</h3>'+(r.count!=null?'<p>'+r.count+' resultados · '+euro(r.total)+'</p>':'')+table(['Referencia','Detalle','Importe'],(r.items||[]).map(i=>[esc(i.id),esc(i.name),euro(i.amount)]))+'<p class="notice">'+esc(r.source||'')+'<br>'+esc(r.mode||'')+'<br>'+esc(r.asOf||'')+'</p></div>';});
@@ -70,6 +71,55 @@ $('logout').onclick=()=>{BrowserBackend.lock();location.reload();};
 ['draftSearch','salesSearch','expenseSearch','bankSearch','documentSearch'].forEach(id=>$(id).addEventListener('input',()=>draw()));
 const questions=['¿Qué clientes me deben dinero?','¿Qué facturas tengo pendientes de pagar?','¿Qué movimientos del banco no tienen factura?','¿Cuánto he facturado este mes?','¿Qué proveedores me han cobrado pero no tengo su factura?','¿Qué documentos tengo pendientes de revisar?'];
 $('questions').innerHTML=questions.map((q,i)=>'<button class="question" data-question="'+i+'">'+esc(q)+'</button>').join('');$('questions').onclick=e=>{const b=e.target.closest('[data-question]');if(b){$('question').value=questions[Number(b.dataset.question)];$('askForm').requestSubmit();}};
+// Interpretación local: propone campos sin confirmar su exactitud ni cambiar registros.
+function parseCustomerText(raw){
+ const text=String(raw||'').slice(0,12000).replace(/\r/g,''),lines=text.split('\n').map(x=>x.trim()).filter(Boolean);
+ const pick=rx=>lines.map(x=>rx.exec(x)?.[1]?.trim()).find(Boolean)||'';
+ const ids=[...text.toUpperCase().matchAll(/\b(?:[A-Z][-. ]?\d{7}[-. ]?[A-Z0-9]|\d{8}[-. ]?[A-Z])\b/g)].map(m=>m[0].replace(/[-. ]/g,''));
+ const unique=[...new Set(ids)],email=text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]||'';
+ const postal=lines.find(x=>/\b\d{5}\b/.test(x))||'',postcode=postal.match(/\b\d{5}\b/)?.[0]||'';
+ const address=pick(/^(?:direcci[oó]n(?: fiscal)?|domicilio(?: fiscal)?)\s*:\s*(.+)$/i)||lines.find(x=>/^(?:calle\b|c\/|avenida\b|av\.|plaza\b|paseo\b|carretera\b|urb\.)/i.test(x))||'';
+ const city=pick(/^(?:poblaci[oó]n|localidad|ciudad|municipio)\s*:\s*(.+)$/i)||(postcode?postal.slice(postal.indexOf(postcode)+5).replace(/^[\s,;:-]+/,'').trim():'');
+ const phone=pick(/^(?:tel[eé]fono|tel\.?|m[oó]vil)\s*:\s*(.+)$/i);
+ const name=pick(/^(?:raz[oó]n social|nombre(?: completo)?|cliente|empresa)\s*:\s*(.+)$/i)||lines.find(x=>!/@/.test(x)&&!/(?:nif|cif|vat|direcci[oó]n|domicilio|tel[eé]fono|c[oó]digo postal)/i.test(x)&&x!==address&&x!==postal&&!/^\d/.test(x))||'';
+ return {name,nif:unique.length===1?unique[0]:'',address,city,postcode,email,phone,ambiguous:unique.length>1};
+}
+function fillCustomerProposal(){
+ const p=parseCustomerText($('intakeText').value);
+ for(const [field,id]of Object.entries({name:'intakeName',nif:'intakeNif',address:'intakeAddress',city:'intakeCity',postcode:'intakePostcode',email:'intakeEmail',phone:'intakePhone'}))$(id).value=p[field];
+ $('intakeReviewed').checked=false;
+ $('intakeStatus').textContent=p.ambiguous?'Se han detectado varias identificaciones fiscales. Elige la del cliente y revisa todos los campos.':'Datos propuestos. Revisa y completa los campos vacíos antes de guardar.';
+}
+$('syncPreparedList').onclick=()=>operation('syncPreparedList',{},r=>toast('Listado preparado actualizado: '+r.rows+' borradores'));
+$('parseCustomer').onclick=()=>{if(!$('intakeText').value.trim())return toast('Pega primero los datos del cliente',true);fillCustomerProposal();};
+let customerOcrLoading=null;
+function customerOcrRoot(){return gas?'https://toursfrommalaga-tech.github.io/mi-negocio-facturas/ocr/':new URL('ocr/',location.href).href;}
+async function loadCustomerOcr(){
+ if(window.Tesseract)return;
+ if(!customerOcrLoading)customerOcrLoading=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=customerOcrRoot()+'tesseract.min.js';script.onload=resolve;script.onerror=()=>reject(Error('No se ha podido cargar el lector de imágenes. Puedes pegar el texto para continuar.'));document.head.appendChild(script);}).catch(e=>{customerOcrLoading=null;throw e;});
+ await customerOcrLoading;
+}
+$('readCustomerImage').onclick=async()=>{
+ const button=$('readCustomerImage');let worker,timer;
+ try{
+  const file=$('intakeImage').files[0];if(!file)throw Error('Selecciona una foto o captura');if(file.size>4*1024*1024)throw Error('Imagen superior a 4 MB');if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('Selecciona una imagen JPEG, PNG o WebP');
+  button.disabled=true;$('intakeStatus').textContent='Cargando lector de imágenes… La primera lectura puede tardar.';await loadCustomerOcr();const root=customerOcrRoot();
+  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('La lectura ha tardado demasiado. Prueba una captura más nítida o pega el texto.')),120000);});
+  const reading=(async()=>{worker=await Tesseract.createWorker('spa',1,{workerPath:root+'worker.min.js',corePath:root+'core',langPath:root+'lang',logger:m=>{if(m.status==='recognizing text')$('intakeStatus').textContent='Leyendo imagen… '+Math.round(m.progress*100)+' %';}});const {data}=await worker.recognize(file);return data.text;})();
+  const text=await Promise.race([reading,timeout]);if(!text.trim())throw Error('No se ha detectado texto. Prueba una imagen más nítida.');$('intakeText').value=text;fillCustomerProposal();
+ }catch(e){$('intakeStatus').textContent=e.message;toast(e.message,true);}finally{clearTimeout(timer);if(worker)await worker.terminate();button.disabled=false;}
+};
+$('intakeImage').onchange=()=>{$('intakeReviewed').checked=false;};
+onform('intakeForm',async f=>{
+ const p=values(f),client=Object.fromEntries(['name','nif','address','postcode','city','email','phone'].map(k=>[k,p[k]]));
+ if(!$('intakeReviewed').checked)throw Error('Revisa y confirma los datos');
+ let documentId='';const file=$('intakeImage').files[0];
+ if(file){const doc=await operation('upload',await filePayload(file));if(!doc)return;documentId=doc.id;}
+ await operation('prepareDraft',{reviewed:true,client,documentId,lines:[{description:p.description,quantity:p.quantity,price:p.price,vat:p.vat,discount:0}]},d=>{
+  $('intakeStatus').textContent='Borrador guardado: '+d.id+'. Puedes descargar el PDF desde el historial de borradores.'+(d.listingSynced===true?' Copia del listado actualizada.':d.listingSynced===false?' '+d.listingMessage:' Anotado en el historial de esta aplicación; la copia de Google requiere el despliegue privado.');f.reset();$('intakeText').value='';$('intakeImage').value='';$('clientId').value=STATE.clients.find(c=>c.nif.toUpperCase()===client.nif.toUpperCase())?.id||'';
+ });
+});
+
 ['draftDate','invoiceDate','allocationDate'].forEach(id=>$(id).value=today());addLine();addAllocation();
 (async()=>{try{const exists=await BrowserBackend.exists();$('login').hidden=false;$('newCompany').hidden=exists;$('confirmPassword').hidden=exists;$('unlockVault').hidden=!exists;$('createVault').hidden=exists;$('vaultIntro').textContent=exists?'Tu espacio cifrado está guardado en este navegador. Introduce su contraseña para abrirlo.':'Crea un espacio cifrado en este navegador. No se enviarán tus registros a GitHub. Guarda después una copia cifrada para protegerlos.';}catch(e){toast(e.message,true);$('login').hidden=false;}})();
 

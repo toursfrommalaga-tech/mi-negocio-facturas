@@ -45,9 +45,15 @@ function detect(buffer) {
 }
 async function handle(req, res) {
   res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('X-Frame-Options', 'DENY'); res.setHeader('Referrer-Policy', 'no-referrer'); res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
   if (req.headers.host !== '127.0.0.1:' + port && req.headers.host !== 'localhost:' + port) return json(res, 403, { error: 'Host no autorizado' });
   const url = new URL(req.url, origin);
+  if (req.method === 'GET' && url.pathname.startsWith('/ocr/')) {
+    const base = path.join(root, 'site/ocr'), filename = path.resolve(base, '.' + url.pathname.slice(4));
+    if (!filename.startsWith(base + path.sep) || !fs.existsSync(filename) || !fs.statSync(filename).isFile()) return json(res, 404, {error:'Recurso no encontrado'});
+    const mime = {'.js':'text/javascript', '.wasm':'application/wasm', '.gz':'application/gzip', '.txt':'text/plain'}[path.extname(filename)] || 'application/octet-stream';
+    res.writeHead(200, {'Content-Type':mime}); res.end(fs.readFileSync(filename)); return;
+  }
   if (req.method === 'GET' && url.pathname === '/') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(page); return; }
   if (req.method === 'GET' && url.pathname === '/api/session') {
     try { const s = session(req); return json(res, 200, { email: s.email, csrf: s.csrf, environment: 'local' }); } catch { return json(res, 401, { error: 'Inicia sesión' }); }

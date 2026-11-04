@@ -3,6 +3,7 @@
 module.exports = function pdf(company, d) {
   const eur = n => (n / 100).toFixed(2) + ' EUR';
   const lines = [company, d.id + ' | ' + d.date, d.client.name, d.client.nif, d.client.address, (d.client.postcode || '') + ' ' + (d.client.city || ''), ''];
+  if(d.issuer && Object.values(d.issuer).some(Boolean))lines.splice(1,0,d.issuer.nif||'',d.issuer.address||'',(d.issuer.postcode||'')+' '+(d.issuer.city||''),'');
   for (const l of d.lines) lines.push(l.description, '  ' + l.quantity + ' x ' + eur(l.unit) + ' | Dto. ' + l.discount + '% | IVA ' + l.vat + '% | ' + eur(l.total));
   lines.push('', 'Base: ' + eur(d.base), 'IVA: ' + eur(d.tax), 'TOTAL ORIENTATIVO: ' + eur(d.total), '', d.note || '', 'Documento interno. Sin emision fiscal ni remision a la AEAT.');
   const wrapped = lines.flatMap(l => String(l).split(/\r?\n/).flatMap(x => x.match(/.{1,88}(?:\s|$)|.{1,88}/g) || ['']));

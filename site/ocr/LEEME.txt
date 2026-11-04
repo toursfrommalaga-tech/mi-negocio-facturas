@@ -1,0 +1,1 @@
+OCR local basado en Tesseract.js (Apache-2.0), tesseract.js-core (Apache-2.0) y datos spa de naptha/tessdata (Apache-2.0; el envoltorio npm declara MIT). Fuentes: https://github.com/naptha/tesseract.js ; https://github.com/naptha/tesseract.js-core ; https://github.com/naptha/tessdata . Los originales de clientes no se envían a estos proyectos.

@@ -26,7 +26,7 @@ var Engine = (function () {
   }
   function auth(s, email) { if (!email) fail('Acceso denegado: no se ha podido identificar tu cuenta'); const u = s.users.find(u => u.email === email.toLowerCase() && u.active); if (!u) fail('Acceso denegado'); return u; }
   function permission(u, action) {
-    const employee = ['view', 'addClient', 'createDraft', 'addDocument', 'addIssue', 'ask', 'draftPDF'];
+    const employee = ['view', 'addClient', 'createDraft', 'prepareDraft', 'addDocument', 'addIssue', 'ask', 'draftPDF'];
     const adviser = ['view', 'ask', 'draftPDF'];
     if (u.role === 'admin') return;
     if (!(u.role === 'employee' ? employee : adviser).includes(action)) fail('Tu perfil no permite esta operación');
@@ -41,7 +41,7 @@ var Engine = (function () {
     const confirmed = invoices.filter(i => i.status === 'confirmed');
     const review = invoices.filter(i => i.status !== 'confirmed');
     const total = (type, field) => confirmed.filter(i => i.type === type).reduce((a, i) => a + i[field], 0);
-    return { version: s.version, company: s.company, revision: s.revision, user: u, integrations: s.integrations,
+    return { version: s.version, company: s.company, issuer: copy(s.issuer || {}), revision: s.revision, user: u, integrations: s.integrations,
       clients: own(s.clients), drafts: own(s.drafts), invoices, bank, documents: own(s.documents), issues: own(s.issues),
       payments: finance ? s.payments : [], proposals: finance ? s.proposals.filter(p => p.status === 'pending') : [],
       users: u.role === 'admin' ? s.users : [], audit: u.role === 'admin' ? s.audit.slice(-200) : [],
@@ -182,7 +182,7 @@ var Engine = (function () {
     const s = copy(original), u = auth(s, email); permission(u, action); p = p || {};
     if (action === 'view') return { state: original, result: visible(s, u), changed: false };
     if (action === 'ask') return { state: original, result: ask(s, u, p.question, ctx), changed: false };
-    if (action === 'draftPDF') { const d = s.drafts.find(d => d.id === p.id && (u.role !== 'employee' || d.createdBy === u.email)) || fail('Borrador no encontrado'); return { state: original, result: { company: s.company, draft: d }, changed: false }; }
+    if (action === 'draftPDF') { const d = s.drafts.find(d => d.id === p.id && (u.role !== 'employee' || d.createdBy === u.email)) || fail('Borrador no encontrado'); return { state: original, result: { company: d.company || s.company, draft: d }, changed: false }; }
     if (action === 'issueFiscal') fail('Emisión fiscal bloqueada: falta verificar cumplimiento, integración y autorización del titular');
     const key = required(p.requestId); if (key.length > 160) fail('Identificador de operación no válido');
     const fingerprint = ctx.hash(JSON.stringify({ action, payload: p }));
@@ -190,6 +190,25 @@ var Engine = (function () {
     if (prior) { if (prior.fingerprint !== fingerprint) fail('Identificador de operación reutilizado con otros datos'); return { state: original, result: prior.result, changed: false }; }
     const meta = { createdBy: u.email, createdAt: ctx.now, tenant: s.tenant }; let result;
     switch (action) {
+      case 'prepareDraft': {
+        if (p.reviewed !== true) fail('Revisa y confirma los datos del cliente y los importes');
+        const c = p.client || {};
+        required(c.name); required(c.nif); required(c.address);
+        // Las operaciones interiores solo cambian copias en memoria. Un fallo no deja un cliente suelto.
+        const existing = s.clients.find(x => norm(x.nif) === norm(c.nif));
+        let staged = s, clientId;
+        if (existing) {
+          if (u.role === 'employee' && existing.createdBy !== u.email) fail('Cliente no autorizado para esta cuenta');
+          if (['name','address','city','postcode'].some(k => norm(existing[k] || '') !== norm(c[k] || ''))) fail('Este NIF ya está registrado con otros datos. Revisa el cliente existente antes de continuar');
+          clientId = existing.id;
+        } else {
+          const added = run(staged, email, 'addClient', Object.assign({}, c, {requestId:ctx.hash(key+':client')}), ctx);
+          staged = added.state; clientId = added.result.id;
+        }
+        const made = run(staged, email, 'createDraft', {requestId:ctx.hash(key+':draft'),clientId,date:p.date,series:p.series,lines:p.lines,note:p.note,documentId:p.documentId}, ctx);
+        Object.assign(s, made.state); result = made.result;
+        break;
+      }
       case 'addClient': {
         const nif = text(p.nif).toUpperCase(); if (nif && s.clients.some(c => norm(c.nif) === norm(nif))) fail('NIF de cliente ya registrado');
         result = Object.assign({ id: ctx.id('CLI'), name: required(p.name), nif, email: text(p.email), address: text(p.address), city: text(p.city), postcode: text(p.postcode), phone: text(p.phone) }, meta); s.clients.push(result); break;
@@ -199,7 +218,7 @@ var Engine = (function () {
         const day = date(p.date || ctx.today), series = text(p.series || 'BOR', 16).toUpperCase(); if (!/^[A-Z0-9_-]{1,16}$/.test(series)) fail('Serie no válida');
         if (p.documentId && !s.documents.some(d => d.id === p.documentId && (u.role !== 'employee' || d.createdBy === u.email))) fail('Adjunto no autorizado');
         const countKey = series + '-' + day.slice(0, 4), next = (s.counters[countKey] || 0) + 1;
-        result = Object.assign({ id: countKey + '-' + String(next).padStart(5, '0'), date: day, series, client: copy(client), status: 'draft', note: text(p.note), documentId: text(p.documentId) }, lineTotals(p.lines), meta);
+        result = Object.assign({ id: countKey + '-' + String(next).padStart(5, '0'), date: day, series, company:s.company, issuer:copy(s.issuer || {}), client: copy(client), status: 'draft', note: text(p.note), documentId: text(p.documentId) }, lineTotals(p.lines), meta);
         s.counters[countKey] = next; s.drafts.push(result); break;
       }
       case 'registerInvoice': result = validateInvoice(p, s, ctx, meta); break;
@@ -233,7 +252,11 @@ var Engine = (function () {
         if (email2 === u.email && (p.role !== 'admin' || p.active === false)) fail('No puedes quitar tu propio acceso de administrador');
         const user = s.users.find(x => x.email === email2); const fields = { email: email2, role: p.role, active: p.active !== false }; if (user) Object.assign(user, fields); else s.users.push(fields); result = fields; break;
       }
-      case 'configure': s.company = required(p.company); result = { company: s.company }; break;
+      case 'configure': {
+        s.company = required(p.company);
+        if(p.issuer){s.issuer={};for(const k of ['nif','address','postcode','city'])s.issuer[k]=text(p.issuer[k]);}
+        result = { company: s.company }; break;
+      }
       case 'syncReceived': {
         if (!Array.isArray(p.records) || p.records.length > 1500) fail('Fuente demasiado grande: requiere importación por lotes'); let imported = 0; const review = [];
         for (const r of p.records) {

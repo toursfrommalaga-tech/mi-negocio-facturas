@@ -1,0 +1,14 @@
+datos-privados/
+**/datos-privados/
+verificacion/
+node_modules/
+__pycache__/
+*.pyc
+.env
+.env.*
+*.pem
+*.key
+*copia*cifrada*.json
+ACCESO_INICIAL.txt
+.clasp.json
+.clasprc.json

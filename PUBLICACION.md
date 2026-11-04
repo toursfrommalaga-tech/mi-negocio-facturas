@@ -42,3 +42,8 @@ La primera comprobación restringida de GitHub no pudo validar la sesión por la
 ## Próximo paso
 
 Completar el servidor privado para la colaboración y la sincronización, manteniendo el proceso existente de recibidas en solo lectura. El OCR/IA, WhatsApp oficial, conexión bancaria y emisión fiscal siguen pendientes. Para comercializarlo como SaaS habrá que utilizar un alojamiento compatible con ese uso y un servidor adecuado; [GitHub Pages establece límites de uso comercial y transacciones sensibles](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits).
+
+
+## Actualización de fotos y fechas
+
+Publicada la versión estática `0f33fe294612a7a8efa1ff25e11876f3ad108935`. GitHub confirmó estado built. Las 17 pruebas pasaron contra el enlace HTTPS en un navegador aislado con datos ficticios. Se añade foto desde Emitidas, asociación y recuperación del albarán, y fecha automática al guardar. Pages continúa siendo personal, sin sincronización con Google ni entre dispositivos.

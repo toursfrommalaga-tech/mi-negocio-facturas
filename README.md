@@ -44,7 +44,7 @@ Este servidor no se ejecuta en GitHub Pages, no está publicado y no se conecta 
 
 ## Pruebas
 
-`tests/pages.test.cjs` prueba la aplicación en un navegador sin perfil personal, con datos ficticios: demostración, PDF, pagos, cifrado, persistencia, contraseña incorrecta, concurrencia entre pestañas, adjuntos, exportación/restauración, alteración de copias, funciones pendientes y diseño móvil. Necesita Playwright y un navegador Chromium. Para verificar la publicación, establece `PILOTO_TEST_URL` con la URL HTTPS; sin esa variable levanta un servidor estático local. Las 16 comprobaciones de la publicación inicial pasaron en ambos entornos. La actualización añade una prueba de foto y fecha automática; la batería actual contiene 17 comprobaciones. La aplicación publicada no necesita paquetes npm.
+`tests/pages.test.cjs` prueba la aplicación en un navegador sin perfil personal, con datos ficticios: demostración, PDF, pagos, cifrado, persistencia, contraseña incorrecta, concurrencia entre pestañas, adjuntos, exportación/restauración, alteración de copias, funciones pendientes y diseño móvil. Necesita Playwright y un navegador Chromium. Para verificar la publicación, establece `PILOTO_TEST_URL` con la URL HTTPS; sin esa variable levanta un servidor estático local. Las 17 comprobaciones de la versión actual han pasado tanto en local como en el enlace HTTPS publicado, incluida la foto desde Emitidas y la fecha automática. La aplicación publicada no necesita paquetes npm.
 
 El motor compartido y la edición local tienen pruebas independientes en la entrega original. No se debe presentar una prueba simulada o de navegador con tamaño móvil como una ejecución en Google o en un Android físico.
 

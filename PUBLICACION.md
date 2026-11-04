@@ -47,3 +47,8 @@ Completar el servidor privado para la colaboración y la sincronización, manten
 ## Actualización de fotos y fechas
 
 Publicada la versión estática `0f33fe294612a7a8efa1ff25e11876f3ad108935`. GitHub confirmó estado built. Las 17 pruebas pasaron contra el enlace HTTPS en un navegador aislado con datos ficticios. Se añade foto desde Emitidas, asociación y recuperación del albarán, y fecha automática al guardar. Pages continúa siendo personal, sin sincronización con Google ni entre dispositivos.
+
+
+## Preparación desde datos de cliente
+
+Publicada la versión estática `cf54bda17f01ab4b4a054e598e79f5038e22a711`. GitHub confirmó built. Las 19 pruebas pasaron en local y en HTTPS, incluida lectura real de una captura ficticia con OCR, interpretación de texto pegado, revisión obligatoria, datos fiscales del emisor y guardado de cliente con borrador. La imagen se procesa en el navegador; se comprobó el recorrido bloqueando peticiones a otros alojamientos. El listado de Google y su OCR dentro del marco de Apps Script permanecen pendientes de verificación allí. La emisión fiscal permanece bloqueada.
